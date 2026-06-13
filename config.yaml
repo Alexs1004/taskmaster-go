@@ -1,0 +1,17 @@
+programs:
+  my_worker:
+    cmd: "./test/worker.sh"
+    numprocs: 1
+    autostart: true
+    autorestart: "unexpected"
+    exitcodes:
+      - 0
+      - 2
+    starttime: 5
+    startretries: 3
+    stopsignal: "TERM"
+    stoptime: 5
+    stdout: "./test/worker.stdout.log"
+    stderr: "./test/worker.stderr.log"
+    workingdir: ""
+    umask: "022"

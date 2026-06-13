@@ -1,0 +1,33 @@
+# -------------------------------------------------------------------
+# Environnement Virtuel Python (Utilisé pour tes tests de Supervisor)
+# -------------------------------------------------------------------
+venv/
+.venv/
+ENV/
+
+# -------------------------------------------------------------------
+# Fichiers de Logs et résidus de tests (Supervisor ou Taskmaster)
+# -------------------------------------------------------------------
+*.log
+test/*.log
+supervisord.pid
+
+# -------------------------------------------------------------------
+# Binaires compilés (Go)
+# -------------------------------------------------------------------
+# On ignore les fichiers exécutables générés par 'go build'
+bin/
+taskmaster
+taskmaster-go
+
+# -------------------------------------------------------------------
+# Outils de développement & IDES
+# -------------------------------------------------------------------
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+
+# Fichiers temporaires du système
+.DS_Store
+Thmubs.db
