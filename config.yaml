@@ -15,3 +15,19 @@ programs:
     stderr: "./test/worker.stderr.log"
     workingdir: ""
     umask: "022"
+  my_worker2:
+    cmd: "./test/worker.sh"
+    numprocs: 2
+    autostart: true
+    autorestart: "unexpected"
+    exitcodes:
+      - 0
+      - 2
+    starttime: 5
+    startretries: 3
+    stopsignal: "TERM"
+    stoptime: 5
+    stdout: "./test/worker2.stdout.log"
+    stderr: "./test/worker2.stderr.log"
+    workingdir: ""
+    umask: "022"
