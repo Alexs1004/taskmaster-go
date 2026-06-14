@@ -1,6 +1,6 @@
 programs:
   my_worker:
-    cmd: "./test/worker.sh"
+    cmd: "./scripts/worker.sh"         
     numprocs: 1
     autostart: true
     autorestart: "unexpected"
@@ -11,23 +11,27 @@ programs:
     startretries: 3
     stopsignal: "TERM"
     stoptime: 5
-    stdout: "./test/worker.stdout.log"
-    stderr: "./test/worker.stderr.log"
+    stdout: "./logs/worker.stdout.log" 
+    stderr: "./logs/worker.stderr.log"
     workingdir: ""
     umask: "022"
+    env:                               
+      ENV_VAR: "production"
+      DEBUG: "false"
+
   my_worker2:
-    cmd: "./test/worker.sh"
+    cmd: "./scripts/worker.sh"
     numprocs: 2
-    autostart: true
+    autostart: false                   
     autorestart: "unexpected"
     exitcodes:
       - 0
       - 2
     starttime: 5
     startretries: 3
-    stopsignal: "TERM"
+    stopsignal: "KILL"
     stoptime: 5
-    stdout: "./test/worker2.stdout.log"
-    stderr: "./test/worker2.stderr.log"
+    stdout: "./logs/worker2.stdout.log"
+    stderr: "./logs/worker2.stderr.log"
     workingdir: ""
     umask: "022"

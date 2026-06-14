@@ -6,6 +6,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"os"
 
 	"github.com/Alexs1004/taskmaster-go/internal/config"
 )
@@ -37,19 +38,58 @@ func NewProcess(name string, cfg config.ProgramConfig) *Process {
 func (p *Process) Start() error {
 	p.mu.Lock()
 
+	// Bouclier contre le double-démarrage
 	if p.State == "RUNNING" || p.State == "STARTING" {
 		p.mu.Unlock()
 		return fmt.Errorf("le processus est déjà en cours d'exécution (état: %s)", p.State)
 	}
 
-	p.IsIntentional = false // Protégé car partagé avec le CLI (futur "stop")
-	p.Cmd = exec.Command("sh", "-c", p.Config.Cmd)
+	p.IsIntentional = false // Protégé car partagé avec le CLI
+
+
+	cmdString := p.Config.Cmd
+	if p.Config.Umask != "" {
+		cmdString = fmt.Sprintf("umask %s && %s", p.Config.Umask, p.Config.Cmd)
+	}
+
+	p.Cmd = exec.Command("sh", "-c", cmdString)
+
+	env := os.Environ()
+	if p.Config.Env != nil {
+		for key, value := range p.Config.Env {
+			env = append(env, fmt.Sprintf("%s=%s", key, value))
+		}
+	}
+	p.Cmd.Env = env
+	
 	if p.Config.WorkingDir != "" {
 		p.Cmd.Dir = p.Config.WorkingDir
 	}
-	p.Cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} // Création d'un groupe de processus pour permettre de tuer le processus et ses enfants
+	p.Cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} // Groupe de processus
+
+	// Redirection de la sortie standard (STDOUT)
+	if p.Config.Stdout != "" {
+		stdoutFile, err := os.OpenFile(p.Config.Stdout, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("Attention: impossible d'ouvrir le fichier stdout pour %s: %v\n", p.Name, err)
+		} else {
+			p.Cmd.Stdout = stdoutFile
+		}
+	}
+
+	// Redirection de la sortie d'erreur (STDERR)
+	if p.Config.Stderr != "" {
+		stderrFile, err := os.OpenFile(p.Config.Stderr, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("Attention: impossible d'ouvrir le fichier stderr pour %s: %v\n", p.Name, err)
+		} else {
+			p.Cmd.Stderr = stderrFile
+		}
+	}
+
 	p.mu.Unlock()
 
+	// Lancement effectif du processus
 	err := p.Cmd.Start()
 	if err != nil {
 		p.mu.Lock()
@@ -91,7 +131,8 @@ func (p *Process) Stop() error {
 
 	p.IsIntentional = true
 	if p.Cmd != nil && p.Cmd.Process != nil {
-		err := syscall.Kill(-p.Cmd.Process.Pid, syscall.SIGTERM)
+		sig := ParseSignal(p.Config.StopSignal)
+		err := syscall.Kill(-p.Cmd.Process.Pid, sig) // Envoi du signal au groupe de processus
 		if err != nil {
 			if err.Error() == "no such process" {
 				return nil
