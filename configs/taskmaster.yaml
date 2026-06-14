@@ -7,7 +7,7 @@ programs:
     exitcodes:
       - 0
       - 2
-    starttime: 20
+    starttime: 10
     startretries: 3
     stopsignal: "TERM"
     stoptime: 5
@@ -27,9 +27,9 @@ programs:
     exitcodes:
       - 0
       - 2
-    starttime: 20
+    starttime: 10
     startretries: 3
-    stopsignal: "KILL"
+    stopsignal: "SIGINT"
     stoptime: 5
     stdout: "./logs/worker2.stdout.log"
     stderr: "./logs/worker2.stderr.log"
