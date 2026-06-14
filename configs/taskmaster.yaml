@@ -7,7 +7,7 @@ programs:
     exitcodes:
       - 0
       - 2
-    starttime: 5
+    starttime: 20
     startretries: 3
     stopsignal: "TERM"
     stoptime: 5
@@ -27,7 +27,7 @@ programs:
     exitcodes:
       - 0
       - 2
-    starttime: 5
+    starttime: 20
     startretries: 3
     stopsignal: "KILL"
     stoptime: 5

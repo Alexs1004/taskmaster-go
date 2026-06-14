@@ -61,9 +61,17 @@ func RunShell(pm *daemon.ProcessManager) {
 			fmt.Println("Fermeture du Taskmaster. Arrêt des processus en cours...")
 			pm.StopAllProcesses() 
 			return
+		
+		case "reload":
+			err := pm.ReloadConfig("configs/taskmaster.yaml")
+			if err != nil {
+				fmt.Printf("Erreur : %v\n", err)
+			} else {
+				fmt.Println("Rechargement terminé.")
+			}
 
 		default:
-			fmt.Printf("Commande inconnue : %s. Commandes disponibles : status, start, stop, exit\n", cmd)
+			fmt.Printf("Commande inconnue : %s. Commandes disponibles : status, start, stop, exit, reload\n", cmd)
 		}
 	}
 

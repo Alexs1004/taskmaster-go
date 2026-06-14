@@ -63,3 +63,43 @@ func LoadConfig(path string) (*Config, error) {
 
 	return &cfg, nil
 }
+
+// HasChanged compare deux configurations pour savoir si un processus doit être redémarré.
+func (c ProgramConfig) HasChanged(newConfig ProgramConfig) bool {
+	// 1. Comparaison des champs basiques
+	if c.Cmd != newConfig.Cmd ||
+		c.NumProcs != newConfig.NumProcs ||
+		c.Autorestart != newConfig.Autorestart ||
+		c.StartTime != newConfig.StartTime ||
+		c.StartRetries != newConfig.StartRetries ||
+		c.StopSignal != newConfig.StopSignal ||
+		c.StopTime != newConfig.StopTime ||
+		c.Stdout != newConfig.Stdout ||
+		c.Stderr != newConfig.Stderr ||
+		c.WorkingDir != newConfig.WorkingDir ||
+		c.Umask != newConfig.Umask {
+		return true
+	}
+
+	// 2. Comparaison des listes de codes de sortie
+	if len(c.ExitCodes) != len(newConfig.ExitCodes) {
+		return true
+	}
+	for i, val := range c.ExitCodes {
+		if val != newConfig.ExitCodes[i] {
+			return true
+		}
+	}
+
+	// 3. Comparaison des variables d'environnement
+	if len(c.Env) != len(newConfig.Env) {
+		return true
+	}
+	for k, v := range c.Env {
+		if newConfig.Env[k] != v {
+			return true
+		}
+	}
+
+	return false
+}

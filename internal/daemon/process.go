@@ -104,6 +104,8 @@ func (p *Process) Start() error {
 	p.StartedAt = time.Now()
 	p.mu.Unlock()
 
+
+	fmt.Printf("[Debug] Lancement du timer de succès pour %s avec une durée de %d secondes\n", p.Name, p.Config.StartTime)
 	// 1. Lancement du Timer de succès
 	p.SuccessTimer = time.AfterFunc(time.Duration(p.Config.StartTime)*time.Second, func() {
 		p.mu.Lock()
