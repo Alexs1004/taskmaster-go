@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"fmt"
 	"os/exec"
 	"sync"
 	"syscall"
@@ -35,11 +36,18 @@ func NewProcess(name string, cfg config.ProgramConfig) *Process {
 // Start lance le processus en arrière-plan et active sa surveillance
 func (p *Process) Start() error {
 	p.mu.Lock()
+
+	if p.State == "RUNNING" || p.State == "STARTING" {
+		p.mu.Unlock()
+		return fmt.Errorf("le processus est déjà en cours d'exécution (état: %s)", p.State)
+	}
+
 	p.IsIntentional = false // Protégé car partagé avec le CLI (futur "stop")
 	p.Cmd = exec.Command("sh", "-c", p.Config.Cmd)
 	if p.Config.WorkingDir != "" {
 		p.Cmd.Dir = p.Config.WorkingDir
 	}
+	p.Cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} // Création d'un groupe de processus pour permettre de tuer le processus et ses enfants
 	p.mu.Unlock()
 
 	err := p.Cmd.Start()
@@ -69,6 +77,28 @@ func (p *Process) Start() error {
 	// 2. Déclenchement du gardien
 	go p.monitor()
 
+	return nil
+}
+
+// Stop tente d'arrêter le processus de manière intentionnelle, en tuant le processus enfant
+func (p *Process) Stop() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.State == "STOPPED" || p.State == "EXITED" || p.State == "FATAL" {
+		return nil
+	}
+
+	p.IsIntentional = true
+	if p.Cmd != nil && p.Cmd.Process != nil {
+		err := syscall.Kill(-p.Cmd.Process.Pid, syscall.SIGTERM)
+		if err != nil {
+			if err.Error() == "no such process" {
+				return nil
+			}
+			return err
+		}
+	}
 	return nil
 }
 
@@ -145,4 +175,11 @@ func (p *Process) handleRestart() {
 
 	time.Sleep(1 * time.Second)
 	_ = p.Start()
+}
+
+// GetStatusInfo renvoie une copie des données actuelles en toute sécurité
+func (p *Process) GetStatusInfo() (int, string, int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.Pid, p.State, p.RetriesCount
 }

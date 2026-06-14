@@ -3,6 +3,8 @@ package daemon
 import (
 	"fmt"
 	"sync"
+	"os"
+	"text/tabwriter"
 )
 
 // ProcessManager orchestre et centralise l'ensemble des processus managés.
@@ -42,4 +44,70 @@ func (pm *ProcessManager) AddProcess(proc *Process) {
 	
 	// Enregistrement de l'instance avec son nom unique comme clé d'accès
 	pm.Processes[proc.Name] = proc
+}
+
+func (pm *ProcessManager) Status() {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	// Utilisation du Tabwriter pour un rendu professionnel
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "NAME\tPID\tSTATE\tRETRIES")
+
+	for name, proc := range pm.Processes {
+		pid, state, retries := proc.GetStatusInfo()
+		
+		fmt.Fprintf(w, "%s\t%d\t%s\t%d\n", name, pid, state, retries)
+	}
+	w.Flush()
+}
+
+func (pm *ProcessManager) SpecificProcessStatus(name string) {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	proc, exists := pm.Processes[name]
+	if !exists {
+		fmt.Printf("Processus %s non trouvé.\n", name)
+		return
+	}
+
+	pid, state, retries := proc.GetStatusInfo()
+	fmt.Printf("Statut du processus %s: PID: %d, State: %s, Retries: %d\n", 
+		name, pid, state, retries)
+}
+
+func (pm *ProcessManager) StartProcess(name string) error {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	proc, exists := pm.Processes[name]
+	if !exists {
+		return fmt.Errorf("processus %s non trouvé", name)
+	}
+
+	return proc.Start()
+}
+
+func (pm *ProcessManager) StopProcess(name string) error {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	proc, exists := pm.Processes[name]
+	if !exists {
+		return fmt.Errorf("processus %s non trouvé", name)
+	}
+	return proc.Stop()
+}
+
+func (pm *ProcessManager) StopAllProcesses() {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	for _, proc := range pm.Processes {
+		err := proc.Stop()
+		if err != nil {
+			fmt.Printf("Erreur à l'arrêt de %s: %v\n", proc.Name, err)
+		}
+	}
 }
